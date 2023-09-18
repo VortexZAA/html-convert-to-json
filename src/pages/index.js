@@ -3,43 +3,7 @@ import { parse } from "node-html-parser";
 export default function Home() {
   const [html, setHtml] = useState(""); // State to hold HTML input
   const [result, setResult] = useState(null); // State to hold the parsed result
-
-  function convertStyleStringToObject(styleString) {
-    const styleArray = styleString?.split(";")?.filter(Boolean);
-    const styleObject = {};
-
-    styleArray?.forEach((style) => {
-      const [key, value] = style.split(":").map((item) => item.trim());
-
-      // Remove '-' and capitalize the character immediately following it
-
-      const formattedKey = key.replace(/-(\w)/g, (_, letter) =>
-        letter.toUpperCase()
-      );
-
-      styleObject[formattedKey] = value;
-    });
-
-    return styleObject;
-  }
-
-  function childrenParser(children) {
-    let result = [];
-    children?.map((child) => {
-      if (child?.rawTagName) {
-        result.push({
-          tag: child?.rawTagName?.toLowerCase(),
-          text: child?.firstChild?.rawText?.trim(),
-          id: child?.id,
-          class: child?.classNames,
-          style: convertStyleStringToObject(child?.attrs?.style),
-          children: childrenParser(child?.childNodes) || [],
-        });
-      }
-    });
-    return result;
-  }
-
+  
   const handleSubmit = async () => {
     const root = parse(html);
     console.log(root?.firstChild?.id, root?.firstChild?.classNames);
@@ -89,4 +53,41 @@ export default function Home() {
       )}
     </div>
   );
+}
+
+function childrenParser(children) {
+  let result = [];
+  children?.map((child) => {
+    if (child?.rawTagName) {
+      result.push({
+        tag: child?.rawTagName?.toLowerCase(),
+        text: child?.firstChild?.rawText?.trim(),
+        id: child?.id,
+        class: child?.classNames,
+        style: convertStyleStringToObject(child?.attrs?.style),
+        children: childrenParser(child?.childNodes) || [],
+      });
+    }
+  });
+  return result;
+}
+
+
+function convertStyleStringToObject(styleString) {
+  const styleArray = styleString?.split(";")?.filter(Boolean);
+  const styleObject = {};
+
+  styleArray?.forEach((style) => {
+    const [key, value] = style.split(":").map((item) => item.trim());
+
+    // Remove '-' and capitalize the character immediately following it
+
+    const formattedKey = key.replace(/-(\w)/g, (_, letter) =>
+      letter.toUpperCase()
+    );
+
+    styleObject[formattedKey] = value;
+  });
+
+  return styleObject;
 }
