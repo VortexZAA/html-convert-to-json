@@ -43,7 +43,7 @@ export default function Home() {
   const parseChildNodes = (children) => {
     if (!children) return null;
 
-    return children.map((child) => parseHtmlElement(child)).filter(Boolean);
+    return children.map((child) => child.rawTagName && parseHtmlElement(child)).filter(Boolean);
   };
 
   const convertStyleStringToObject = (styleString) => {
