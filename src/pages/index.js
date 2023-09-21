@@ -1,30 +1,67 @@
 import { useState } from "react";
 import { parse } from "node-html-parser";
+
 export default function Home() {
-  const [html, setHtml] = useState(""); // State to hold HTML input
-  const [result, setResult] = useState(null); // State to hold the parsed result
-  
+  const [html, setHtml] = useState("");
+  const [result, setResult] = useState(null);
+
   const handleSubmit = async () => {
     const root = parse(html);
-    console.log(root?.firstChild?.id, root?.firstChild?.classNames);
-    const htmlElement = root.querySelector(
-      root?.firstChild?.classNames
-        ? `.${root?.firstChild?.classNames}`
-        : root?.firstChild?.id
-        ? `#${root?.firstChild?.id}`
-        : root?.firstChild?.rawTagName
-    );
-    //console.log(htmlElement);
-    const result = {
-      tag: htmlElement?.rawTagName?.toLowerCase(),
-      text: htmlElement?.firstChild?.rawText?.trim(),
-      id: htmlElement?.id,
-      class: htmlElement?.classNames,
-      style: convertStyleStringToObject(htmlElement?.attrs?.style),
-      children: childrenParser(htmlElement?.childNodes) || [],
-    };
+    const firstChild = root.firstChild;
+
+    const selector = firstChild
+      ? firstChild.classNames
+        ? `.${firstChild.classNames}`
+        : firstChild.id
+        ? `#${firstChild.id}`
+        : firstChild.rawTagName
+      : "";
+
+    const htmlElement = root.querySelector(selector);
+
+    const result = parseHtmlElement(htmlElement);
     setResult(result);
-    //console.log(result);
+  };
+
+  const parseHtmlElement = (element) => {
+    if (!element) return null;
+
+    const { rawTagName, firstChild, id, classNames, attrs, childNodes } = element;
+
+    const result = {
+      tag: rawTagName?.toLowerCase(),
+      text: firstChild?.rawText?.trim(),
+      id,
+      class: classNames,
+      style: convertStyleStringToObject(attrs?.style),
+      children: parseChildNodes(childNodes) || [],
+    };
+
+    return result;
+  };
+
+  const parseChildNodes = (children) => {
+    if (!children) return null;
+
+    return children.map((child) => parseHtmlElement(child)).filter(Boolean);
+  };
+
+  const convertStyleStringToObject = (styleString) => {
+    if (!styleString) return {};
+
+    const styleArray = styleString.split(";").filter(Boolean);
+    const styleObject = {};
+
+    styleArray.forEach((style) => {
+      const [key, value] = style.split(":").map((item) => item.trim());
+      const formattedKey = key.replace(/-(\w)/g, (_, letter) =>
+        letter.toUpperCase()
+      );
+
+      styleObject[formattedKey] = value;
+    });
+
+    return styleObject;
   };
 
   return (
@@ -34,7 +71,7 @@ export default function Home() {
         <textarea
           rows="14"
           cols="50"
-          className="text-black p-3 "
+          className="text-black p-3"
           value={html}
           onChange={(e) => setHtml(e.target.value)}
         ></textarea>
@@ -53,41 +90,4 @@ export default function Home() {
       )}
     </div>
   );
-}
-
-function childrenParser(children) {
-  let result = [];
-  children?.map((child) => {
-    if (child?.rawTagName) {
-      result.push({
-        tag: child?.rawTagName?.toLowerCase(),
-        text: child?.firstChild?.rawText?.trim(),
-        id: child?.id,
-        class: child?.classNames,
-        style: convertStyleStringToObject(child?.attrs?.style),
-        children: childrenParser(child?.childNodes) || [],
-      });
-    }
-  });
-  return result;
-}
-
-
-function convertStyleStringToObject(styleString) {
-  const styleArray = styleString?.split(";")?.filter(Boolean);
-  const styleObject = {};
-
-  styleArray?.forEach((style) => {
-    const [key, value] = style.split(":").map((item) => item.trim());
-
-    // Remove '-' and capitalize the character immediately following it
-
-    const formattedKey = key.replace(/-(\w)/g, (_, letter) =>
-      letter.toUpperCase()
-    );
-
-    styleObject[formattedKey] = value;
-  });
-
-  return styleObject;
 }
